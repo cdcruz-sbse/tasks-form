@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Creator · Staffbase</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --sb-purple: #7B2D8B;
+            --sb-purple-dark: #5f2070;
+            --sb-purple-light: #f3ecf8;
+            --sb-purple-muted: rgba(107, 45, 139, 0.08);
+            --sb-white: #ffffff;
+            --sb-bg: #f7f5fa;
+            --sb-border: #e4dcea;
+            --sb-charcoal: #1a1a2e;
+            --sb-gray: #6b7280;
+            --sb-gray-light: #f9f8fb;
+            --sb-success: #0f7b55;
+            --sb-error: #c0392b;
+            --sb-teal: #0d9488;
+            --shadow-sm: 0 1px 4px rgba(107,45,139,0.06);
+            --shadow-md: 0 4px 16px rgba(107,45,139,0.10);
+            --shadow-lg: 0 8px 32px rgba(107,45,139,0.13);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--sb-bg);
+            min-height: 100vh;
+            color: var(--sb-charcoal);
+            line-height: 1.6;
+        }
+
+        /* ── Top Nav Bar ── */
+        .topbar {
+            background: var(--sb-purple);
+            padding: 0 32px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 8px rgba(107,45,139,0.18);
+        }
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .topbar-logo svg {
+            width: 28px;
+            height: 28px;
+            fill: white;
+        }
+        .topbar-wordmark {
+            font-size: 17px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.3px;
+        }
+        .topbar-divider {
+            width: 1px;
+            height: 20px;
+            background: rgba(255,255,255,0.25);
+            margin: 0 10px;
+        }
+        .topbar-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.82);
+        }
+
+        .container { max-width: 720px; margin: 0 auto; padding: 36px 24px 48px; }
+
+        .page-header { margin-bottom: 32px; }
+        .page-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--sb-charcoal);
+            letter-spacing: -0.4px;
+            margin-bottom: 6px;
+        }
+        .page-header p { color: var(--sb-gray); font-size: 15px; }
+
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 28px 32px;
+            margin-bottom: 20px;
+            border: 1px solid var(--sb-border);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            padding-bottom: 16px;
+            border-bottom: 1.5px solid var(--sb-border);
+        }
+        .step-number {
+            width: 30px; height: 30px;
+            background: var(--sb-purple);
+            color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px;
+            flex-shrink: 0;
+        }
+        .card-header h2 {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--sb-charcoal);
+            letter-spacing: -0.2px;
+        }
+
+        .form-group { margin-bottom: 22px; }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 7px; color: var(--sb-charcoal); letter-spacing: 0.1px; }
+        label .required { color: var(--sb-error); }
+        .text-input {
+            width: 100%; padding: 12px 14px;
+            border: 1.5px solid var(--sb-border);
+            border-radius: var(--radius-md);
+            font-size: 14px; font-family: inherit;
+            color: var(--sb-charcoal);
+            background: white;
+            transition: border-color 0.18s, box-shadow 0.18s;
+        }
+        .text-input:focus {
+            outline: none;
+            border-color: var(--sb-purple);
+            box-shadow: 0 0 0 3px rgba(107,45,139,0.12);
+        }
+
+        /* Multi-select */
+        .multi-select-container { position: relative; }
+        .multi-select-trigger {
+            width: 100%; min-height: 50px; padding: 10px 44px 10px 14px;
+            border: 1.5px solid var(--sb-border); border-radius: var(--radius-md);
+            background: white; cursor: pointer;
+            display: flex; flex-wrap: wrap; gap: 7px; align-items: center;
+            transition: border-color 0.18s, box-shadow 0.18s;
+            position: relative;
+        }
+        .multi-select-trigger:hover { border-color: var(--sb-purple); }
+        .multi-select-trigger.active {
+            border-color: var(--sb-purple);
+            box-shadow: 0 0 0 3px rgba(107,45,139,0.12);
+        }
+        .multi-select-trigger::after {
+            content: '';
+            position: absolute; right: 14px; top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--sb-gray);
+            transition: transform 0.2s;
+        }
+        .multi-select-trigger.active::after { transform: translateY(-50%) rotate(180deg); }
+        .multi-select-placeholder { color: #aaa; font-size: 14px; }
+
+        .selected-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: var(--sb-purple-light);
+            color: var(--sb-purple);
+            border: 1px solid rgba(107,45,139,0.2);
+            padding: 5px 10px; border-radius: 20px;
+            font-size: 12px; font-weight: 600;
+        }
+        .selected-tag .remove-tag { cursor: pointer; opacity: 0.7; font-size: 15px; margin-left: 2px; line-height: 1; }
+        .selected-tag .remove-tag:hover { opacity: 1; }
+
+        .multi-select-dropdown {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: white;
+            border: 1.5px solid var(--sb-purple);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            max-height: 320px; overflow: hidden;
+            z-index: 100; display: none;
+        }
+        .multi-select-dropdown.show { display: block; animation: dropdownFade 0.18s ease; }
+        @keyframes dropdownFade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .dropdown-search { padding: 10px; border-bottom: 1px solid var(--sb-border); background: white; }
+        .dropdown-search input {
+            width: 100%; padding: 9px 12px;
+            border: 1.5px solid var(--sb-border); border-radius: var(--radius-sm);
+            font-size: 13px; font-family: inherit; color: var(--sb-charcoal);
+        }
+        .dropdown-search input:focus { outline: none; border-color: var(--sb-purple); }
+        .dropdown-options { max-height: 250px; overflow-y: auto; }
+        .dropdown-option {
+            padding: 12px 16px; cursor: pointer;
+            display: flex; align-items: center; gap: 12px;
+            border-bottom: 1px solid #f3f0f7;
+            transition: background 0.12s;
+        }
+        .dropdown-option:hover { background: var(--sb-purple-light); }
+        .dropdown-option.selected { background: rgba(107,45,139,0.06); }
+        .dropdown-option .checkbox {
+            width: 20px; height: 20px;
+            border: 1.5px solid #ccc; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .dropdown-option.selected .checkbox { background: var(--sb-purple); border-color: var(--sb-purple); }
+        .dropdown-option .checkbox svg { width: 12px; height: 12px; fill: white; opacity: 0; }
+        .dropdown-option.selected .checkbox svg { opacity: 1; }
+        .dropdown-option .store-title { font-weight: 600; font-size: 14px; }
+        .dropdown-option .store-id { font-size: 11px; color: var(--sb-gray); font-family: monospace; margin-top: 1px; }
+        .dropdown-loading, .dropdown-empty, .dropdown-error { padding: 28px 20px; text-align: center; color: var(--sb-gray); font-size: 14px; }
+        .dropdown-loading .spinner {
+            width: 28px; height: 28px;
+            border: 2.5px solid var(--sb-purple-light);
+            border-top-color: var(--sb-purple);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        /* Input mode tabs */
+        .input-mode-tabs {
+            display: flex;
+            gap: 0;
+            border: 1.5px solid var(--sb-border);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: var(--sb-gray-light);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--sb-gray);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .tab-btn:first-child { border-right: 1.5px solid var(--sb-border); }
+        .tab-btn.active {
+            background: var(--sb-purple);
+            color: white;
+        }
+        .tab-btn svg { width: 15px; height: 15px; fill: currentColor; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Manual task entry */
+        .manual-tasks-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+        .manual-task-row {
+            background: var(--sb-gray-light);
+            border: 1.5px solid var(--sb-border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            position: relative;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .manual-task-row:focus-within {
+            border-color: var(--sb-purple);
+            box-shadow: 0 0 0 3px rgba(123,45,139,0.08);
+        }
+        .manual-task-row-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .manual-task-number {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sb-purple);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .remove-task-btn {
+            width: 26px; height: 26px;
+            border: none; background: white;
+            border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--sb-border);
+            transition: background 0.15s;
+        }
+        .remove-task-btn:hover { background: #fee2e2; border-color: #fca5a5; }
+        .remove-task-btn:hover svg { fill: var(--sb-error); }
+        .remove-task-btn svg { width: 14px; height: 14px; fill: var(--sb-gray); }
+        .manual-task-fields { display: grid; gap: 8px; }
+        .manual-task-fields .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .manual-task-fields input,
+        .manual-task-fields textarea {
+            width: 100%; padding: 9px 11px;
+            border: 1.5px solid var(--sb-border);
+            border-radius: var(--radius-sm);
+            font-size: 13px; font-family: inherit;
+            color: var(--sb-charcoal);
+            background: white;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .manual-task-fields input:focus,
+        .manual-task-fields textarea:focus {
+            outline: none;
+            border-color: var(--sb-purple);
+            box-shadow: 0 0 0 2px rgba(123,45,139,0.1);
+        }
+        .manual-task-fields textarea { resize: vertical; min-height: 56px; }
+        .manual-task-fields .field-label {
+            font-size: 11px; font-weight: 600;
+            color: var(--sb-gray); margin-bottom: 3px;
+            text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .add-task-btn {
+            width: 100%; padding: 11px;
+            border: 2px dashed var(--sb-border);
+            border-radius: var(--radius-md);
+            background: transparent;
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            color: var(--sb-purple);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .add-task-btn:hover { border-color: var(--sb-purple); background: var(--sb-purple-muted); }
+        .add-task-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+        /* File upload */
+        .file-upload-zone {
+            border: 2px dashed var(--sb-border);
+            border-radius: var(--radius-md);
+            padding: 36px 20px; text-align: center; cursor: pointer;
+            background: var(--sb-gray-light);
+            transition: border-color 0.18s, background 0.18s;
+        }
+        .file-upload-zone:hover { border-color: var(--sb-purple); background: var(--sb-purple-muted); }
+        .file-upload-zone.has-file { border-color: var(--sb-success); border-style: solid; background: rgba(15,123,85,0.04); }
+        .file-upload-icon {
+            width: 56px; height: 56px;
+            background: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--sb-border);
+        }
+        .file-upload-icon svg { width: 26px; height: 26px; fill: var(--sb-purple); }
+        .file-upload-zone h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+        .file-upload-zone p { font-size: 13px; color: var(--sb-gray); }
+        .file-upload-zone input { display: none; }
+
+        .file-info {
+            display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+            background: white; border-radius: var(--radius-md);
+            margin-top: 14px; border: 1px solid var(--sb-border);
+        }
+        .file-info .file-icon {
+            width: 44px; height: 44px;
+            background: var(--sb-success);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .file-info .file-icon svg { width: 22px; height: 22px; fill: white; }
+        .file-info .file-details { flex: 1; }
+        .file-info .file-name { font-weight: 600; font-size: 14px; }
+        .file-info .file-meta { font-size: 12px; color: var(--sb-gray); }
+        .file-info .remove-file {
+            width: 32px; height: 32px; border: none;
+            background: var(--sb-gray-light); border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        .file-info .remove-file:hover { background: #fee2e2; }
+        .file-info .remove-file:hover svg { fill: var(--sb-error); }
+        .file-info .remove-file svg { width: 16px; height: 16px; fill: var(--sb-gray); }
+
+        .help-text { font-size: 12px; color: var(--sb-gray); margin-top: 7px; }
+
+        /* Preview */
+        .preview-section { margin-top: 22px; }
+        .preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .preview-header h4 { font-size: 14px; font-weight: 600; }
+        .preview-count {
+            font-size: 12px; color: white;
+            background: var(--sb-purple); padding: 3px 10px;
+            border-radius: 20px; font-weight: 600;
+        }
+        .preview-table-wrapper {
+            border: 1px solid var(--sb-border); border-radius: var(--radius-md);
+            overflow: hidden; max-height: 260px; overflow-y: auto;
+        }
+        .preview-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .preview-table th {
+            background: var(--sb-charcoal); color: white;
+            padding: 10px 14px; text-align: left;
+            font-weight: 600; font-size: 12px;
+            position: sticky; top: 0;
+            letter-spacing: 0.3px;
+        }
+        .preview-table td { padding: 10px 14px; border-bottom: 1px solid #f0ecf7; }
+        .preview-table tr:hover td { background: var(--sb-purple-light); }
+        .preview-table .task-title { font-weight: 600; }
+        .preview-table .task-desc { color: var(--sb-gray); max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .preview-table .task-due { color: var(--sb-purple); font-weight: 500; }
+
+        /* Summary */
+        .summary-grid { display: grid; gap: 10px; font-size: 14px; }
+        .summary-row {
+            display: flex; justify-content: space-between;
+            padding: 11px 14px; background: var(--sb-gray-light);
+            border-radius: 8px; border: 1px solid var(--sb-border);
+        }
+        .summary-row span:first-child { color: var(--sb-gray); font-size: 13px; }
+        .summary-row span:last-child { font-weight: 600; }
+        .summary-total {
+            background: var(--sb-purple);
+            color: white; border-color: transparent;
+        }
+        .summary-total span { color: white !important; }
+        .summary-total span:last-child { font-size: 16px; font-weight: 700; }
+
+        /* Submit */
+        .submit-section { margin-top: 28px; }
+        .submit-btn {
+            width: 100%; padding: 16px 32px;
+            background: var(--sb-purple);
+            color: white; border: none; border-radius: var(--radius-md);
+            font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            box-shadow: 0 4px 16px rgba(107,45,139,0.22);
+            transition: background 0.18s, transform 0.18s, box-shadow 0.18s;
+            letter-spacing: -0.1px;
+        }
+        .submit-btn:hover:not(:disabled) {
+            background: var(--sb-purple-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 28px rgba(107,45,139,0.28);
+        }
+        .submit-btn:active:not(:disabled) { transform: translateY(0); }
+        .submit-btn:disabled { opacity: 0.48; cursor: not-allowed; }
+        .submit-btn svg { width: 18px; height: 18px; fill: currentColor; }
+        .submit-btn .btn-spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white; border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Status */
+        .status-message {
+            padding: 14px 18px; border-radius: var(--radius-md);
+            margin-top: 14px; display: flex; align-items: flex-start; gap: 10px;
+            animation: slideIn 0.22s ease;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .status-message.success { background: rgba(15,123,85,0.08); border: 1px solid rgba(15,123,85,0.25); color: var(--sb-success); }
+        .status-message.error { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.25); color: var(--sb-error); }
+        .status-message.info { background: var(--sb-purple-muted); border: 1px solid rgba(107,45,139,0.2); color: var(--sb-purple); }
+        .status-message svg { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; margin-top: 1px; }
+        .status-message .message-content { flex: 1; }
+        .status-message .message-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+        .status-message .message-details { font-size: 13px; opacity: 0.88; }
+
+        /* Progress */
+        .progress-container {
+            margin-top: 18px; background: white;
+            border-radius: var(--radius-md); padding: 18px 20px;
+            border: 1px solid var(--sb-border);
+        }
+        .progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .progress-label { font-size: 13px; font-weight: 500; color: var(--sb-charcoal); }
+        .progress-percent { font-size: 13px; color: var(--sb-purple); font-weight: 700; }
+        .progress-bar { height: 8px; background: var(--sb-purple-light); border-radius: 4px; overflow: hidden; }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--sb-purple), #a855f7);
+            border-radius: 4px;
+            transition: width 0.28s ease;
+        }
+        .progress-details { margin-top: 14px; font-size: 12px; max-height: 110px; overflow-y: auto; }
+        .progress-item { padding: 5px 0; border-bottom: 1px solid #f0ecf7; }
+        .progress-item.success { color: var(--sb-success); }
+        .progress-item.error { color: var(--sb-error); }
+        .progress-item.pending { color: var(--sb-gray); }
+
+        /* Footer */
+        .footer { text-align: center; padding: 28px 0 8px; color: var(--sb-gray); font-size: 12px; }
+        .footer a { color: var(--sb-purple); text-decoration: none; font-weight: 500; }
+        .footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <!-- Top navigation bar -->
+    <nav class="topbar">
+        <a class="topbar-logo" href="https://staffbase.com" target="_blank">
+            <!-- Staffbase "S" logomark -->
+            <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="6" fill="rgba(255,255,255,0.15)"/>
+                <text x="50%" y="22" text-anchor="middle" font-family="DM Sans, sans-serif" font-weight="800" font-size="18" fill="white">S</text>
+            </svg>
+            <span class="topbar-wordmark">Staffbase</span>
+        </a>
+        <div class="topbar-divider"></div>
+        <span class="topbar-title">Internal Tools</span>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Bulk Task Creator</h1>
+            <p>Create task lists across multiple channel projects in one go.</p>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="step-number">1</span>
+                <h2>Select Target Channels</h2>
+            </div>
+            <div class="form-group">
+                <label>Channel Projects <span class="required">*</span></label>
+                <div class="multi-select-container">
+                    <div class="multi-select-trigger" id="storeSelectTrigger" tabindex="0">
+                        <span class="multi-select-placeholder">Select channel projects…</span>
+                    </div>
+                    <div class="multi-select-dropdown" id="storeDropdown">
+                        <div class="dropdown-search">
+                            <input type="text" id="storeSearchInput" placeholder="Search by channel name…">
+                        </div>
+                        <div class="dropdown-options" id="storeOptions">
+                            <div class="dropdown-loading"><div class="spinner"></div><p>Loading channel projects…</p></div>
+                        </div>
+                    </div>
+                </div>
+                <p class="help-text">Tasks will be created in each selected channel's project</p>
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="card">
+            <div class="card-header">
+                <span class="step-number">2</span>
+                <h2>Configure Task List</h2>
+            </div>
+            <div class="form-group">
+                <label>Task List Name <span class="required">*</span></label>
+                <input type="text" class="text-input" id="taskListName" placeholder="e.g., Q2 Onboarding Checklist">
+                <p class="help-text">This name will appear in each channel's task project</p>
+            </div>
+            <div class="form-group">
+                <label>Tasks <span class="required">*</span></label>
+
+                <!-- Tab toggle -->
+                <div class="input-mode-tabs">
+                    <button class="tab-btn active" id="tabUpload" onclick="switchTab('upload')">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8v-2zm0-4h8v2H8v-2z"/></svg>
+                        Upload File
+                    </button>
+                    <button class="tab-btn" id="tabManual" onclick="switchTab('manual')">
+                        <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                        Enter Manually
+                    </button>
+                </div>
+
+                <!-- Upload panel -->
+                <div class="tab-panel active" id="panelUpload">
+                    <div class="file-upload-zone" id="fileUploadZone">
+                        <div class="file-upload-icon">
+                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8v-2zm0-4h8v2H8v-2z"/></svg>
+                        </div>
+                        <h3>Drop your Excel or CSV file here</h3>
+                        <p>or click to browse · Supports .xlsx, .xls, .csv</p>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+                    </div>
+                    <div id="fileInfoContainer" style="display:none;"></div>
+                    <p class="help-text">Expected columns: Task Title, Description, Due Date (optional)</p>
+                </div>
+
+                <!-- Manual entry panel -->
+                <div class="tab-panel" id="panelManual">
+                    <div class="manual-tasks-list" id="manualTasksList"></div>
+                    <button class="add-task-btn" onclick="addManualTask()">
+                        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        Add Another Task
+                    </button>
+                    <p class="help-text" style="margin-top:10px;">Fill in at least a title for each task. Remove rows with the × button.</p>
+                </div>
+            </div>
+
+            <div class="preview-section" id="previewSection" style="display:none;">
+                <div class="preview-header">
+                    <h4>📋 Task Preview</h4>
+                    <span class="preview-count" id="previewCount">0 tasks</span>
+                </div>
+                <div class="preview-table-wrapper">
+                    <table class="preview-table">
+                        <thead><tr><th>Title</th><th>Description</th><th>Due Date</th></tr></thead>
+                        <tbody id="previewTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="card" id="summaryCard" style="display:none;">
+            <div class="card-header">
+                <span class="step-number">✓</span>
+                <h2>Summary</h2>
+            </div>
+            <div class="summary-grid" id="summaryContent"></div>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-section">
+            <button type="button" class="submit-btn" id="submitBtn" disabled>
+                <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                Create Tasks
+            </button>
+            <div id="statusContainer"></div>
+            <div class="progress-container" id="progressContainer" style="display:none;">
+                <div class="progress-header">
+                    <span class="progress-label" id="progressLabel">Creating tasks…</span>
+                    <span class="progress-percent" id="progressPercent">0%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+                <div class="progress-details" id="progressDetails"></div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Staffbase Internal Tools · <a href="https://staffbase.com" target="_blank">staffbase.com</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // ========== CONFIGURATION ==========
+        const CONFIG = {
+            baseUrl: 'https://app.staffbase.com/api',
+            apiToken: 'NjlmOWVhYmI3ZTRhMjQyMzFiMDY5ZjM2OnhxWzFjR2x6TWR7NlZKOWJ9YXFYUSFZUnArKWZ+Ulh7aWsyOHZvaDJHRlNOR3NWITkwUFVIK00rdU8sOypNLiQ=', // Replace with your API token
+            taskColors: ['#7B2D8B', '#0d9488', '#0f7b55', '#2563eb', '#9333ea']
+        };
+
+        // ========== STATE ==========
+        const state = { storeProjects: [], selectedStores: [], parsedTasks: [], isSubmitting: false };
+
+        // ========== DOM ELEMENTS ==========
+        const el = {
+            storeSelectTrigger: document.getElementById('storeSelectTrigger'),
+            storeDropdown: document.getElementById('storeDropdown'),
+            storeOptions: document.getElementById('storeOptions'),
+            storeSearchInput: document.getElementById('storeSearchInput'),
+            taskListName: document.getElementById('taskListName'),
+            fileUploadZone: document.getElementById('fileUploadZone'),
+            fileInput: document.getElementById('fileInput'),
+            fileInfoContainer: document.getElementById('fileInfoContainer'),
+            previewSection: document.getElementById('previewSection'),
+            previewCount: document.getElementById('previewCount'),
+            previewTableBody: document.getElementById('previewTableBody'),
+            summaryCard: document.getElementById('summaryCard'),
+            summaryContent: document.getElementById('summaryContent'),
+            submitBtn: document.getElementById('submitBtn'),
+            statusContainer: document.getElementById('statusContainer'),
+            progressContainer: document.getElementById('progressContainer'),
+            progressLabel: document.getElementById('progressLabel'),
+            progressPercent: document.getElementById('progressPercent'),
+            progressFill: document.getElementById('progressFill'),
+            progressDetails: document.getElementById('progressDetails')
+        };
+
+        // ========== TAB SWITCHING ==========
+        let activeTab = 'upload';
+        let manualTaskCounter = 0;
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
+            document.getElementById('tabManual').classList.toggle('active', tab === 'manual');
+            document.getElementById('panelUpload').classList.toggle('active', tab === 'upload');
+            document.getElementById('panelManual').classList.toggle('active', tab === 'manual');
+
+            if (tab === 'manual') {
+                // Clear file state
+                state.parsedTasks = [];
+                clearFile();
+                el.previewSection.style.display = 'none';
+                // Seed with one empty row if none exist
+                if (document.querySelectorAll('.manual-task-row').length === 0) addManualTask();
+                syncManualTasks();
+            } else {
+                // Clear manual tasks from parsedTasks so upload takes over
+                state.parsedTasks = [];
+                updateSummary();
+                validateForm();
+            }
+        }
+        window.switchTab = switchTab;
+
+        // ========== MANUAL TASK ENTRY ==========
+        function addManualTask() {
+            manualTaskCounter++;
+            const id = `mt-${manualTaskCounter}`;
+            const row = document.createElement('div');
+            row.className = 'manual-task-row';
+            row.dataset.id = id;
+            row.innerHTML = `
+                <div class="manual-task-row-header">
+                    <span class="manual-task-number">Task ${document.querySelectorAll('.manual-task-row').length + 1}</span>
+                    <button class="remove-task-btn" onclick="removeManualTask('${id}')" title="Remove task">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+                    </button>
+                </div>
+                <div class="manual-task-fields">
+                    <div>
+                        <div class="field-label">Title <span style="color:var(--sb-error)">*</span></div>
+                        <input type="text" class="mt-title" placeholder="e.g., Complete safety training" oninput="syncManualTasks()">
+                    </div>
+                    <div>
+                        <div class="field-label">Description</div>
+                        <textarea class="mt-desc" placeholder="Optional details about this task…" oninput="syncManualTasks()"></textarea>
+                    </div>
+                    <div>
+                        <div class="field-label">Due Date</div>
+                        <input type="date" class="mt-due" oninput="syncManualTasks()">
+                    </div>
+                </div>`;
+            document.getElementById('manualTasksList').appendChild(row);
+            renumberManualTasks();
+            row.querySelector('.mt-title').focus();
+        }
+        window.addManualTask = addManualTask;
+
+        function removeManualTask(id) {
+            const row = document.querySelector(`.manual-task-row[data-id="${id}"]`);
+            if (row) row.remove();
+            renumberManualTasks();
+            syncManualTasks();
+        }
+        window.removeManualTask = removeManualTask;
+
+        function renumberManualTasks() {
+            document.querySelectorAll('.manual-task-row').forEach((row, i) => {
+                row.querySelector('.manual-task-number').textContent = `Task ${i + 1}`;
+            });
+        }
+
+        function syncManualTasks() {
+            if (activeTab !== 'manual') return;
+            const rows = document.querySelectorAll('.manual-task-row');
+            state.parsedTasks = Array.from(rows)
+                .map(row => ({
+                    title: row.querySelector('.mt-title').value.trim(),
+                    description: row.querySelector('.mt-desc').value.trim(),
+                    dueDate: row.querySelector('.mt-due').value ? new Date(row.querySelector('.mt-due').value).toISOString() : null
+                }))
+                .filter(t => t.title.length > 0);
+
+            if (state.parsedTasks.length > 0) {
+                renderPreview();
+            } else {
+                el.previewSection.style.display = 'none';
+            }
+            updateSummary();
+            validateForm();
+        }
+        window.syncManualTasks = syncManualTasks;
+
+        // ========== API FUNCTIONS ==========
+        async function fetchStoreProjects() {
+            el.storeOptions.innerHTML = '<div class="dropdown-loading"><div class="spinner"></div><p>Loading channel projects…</p></div>';
+            try {
+                const response = await fetch(`${CONFIG.baseUrl}/installations`, {
+                    headers: { 'Authorization': `Basic ${CONFIG.apiToken}`, 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+
+                state.storeProjects = (data.data || data)
+                    .filter(inst => inst.pluginID === 'tasks' || inst.pluginId === 'tasks')
+                    .map(inst => ({
+                        id: inst.id,
+                        title: inst.config?.localization?.en_US?.title || inst.title || inst.name || 'Untitled'
+                    }))
+                    .sort((a, b) => a.title.localeCompare(b.title));
+
+                if (state.storeProjects.length === 0) {
+                    el.storeOptions.innerHTML = '<div class="dropdown-empty"><p>No Tasks projects found.</p></div>';
+                } else {
+                    renderStoreOptions();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                el.storeOptions.innerHTML = `<div class="dropdown-error"><p>Failed to load. Using demo data.</p></div>`;
+                loadDemoData();
+            }
+        }
+
+        function loadDemoData() {
+            state.storeProjects = [
+                { id: 'demo-001', title: 'Engineering · Berlin' },
+                { id: 'demo-002', title: 'Marketing · New York' },
+                { id: 'demo-003', title: 'Sales · London' },
+                { id: 'demo-004', title: 'Customer Success · Sydney' },
+                { id: 'demo-005', title: 'Product · Amsterdam' }
+            ];
+            renderStoreOptions();
+        }
+
+        async function createTaskList(installationId, name, color) {
+            const response = await fetch(`${CONFIG.baseUrl}/tasks/${installationId}/lists`, {
+                method: 'POST',
+                headers: { 'Authorization': `Basic ${CONFIG.apiToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, color })
+            });
+            if (!response.ok) throw new Error(`Failed: ${response.status}`);
+            return response.json();
+        }
+
+        async function createTask(installationId, taskData) {
+            const response = await fetch(`${CONFIG.baseUrl}/tasks/${installationId}/task`, {
+                method: 'POST',
+                headers: { 'Authorization': `Basic ${CONFIG.apiToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(taskData)
+            });
+            if (!response.ok) throw new Error(`Failed: ${response.status}`);
+            return response.json();
+        }
+
+        // ========== CHANNEL SELECTION ==========
+        function renderStoreOptions(filter = '') {
+            const filtered = state.storeProjects.filter(s => s.title.toLowerCase().includes(filter.toLowerCase()));
+            if (filtered.length === 0) {
+                el.storeOptions.innerHTML = `<div class="dropdown-empty"><p>No channels found matching "${filter}"</p></div>`;
+                return;
+            }
+            el.storeOptions.innerHTML = filtered.map(store => `
+                <div class="dropdown-option ${state.selectedStores.some(s => s.id === store.id) ? 'selected' : ''}"
+                     data-id="${store.id}" data-title="${escapeHtml(store.title)}">
+                    <div class="checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>
+                    <div class="store-info">
+                        <div class="store-title">${escapeHtml(store.title)}</div>
+                        <div class="store-id">ID: ${store.id}</div>
+                    </div>
+                </div>
+            `).join('');
+            el.storeOptions.querySelectorAll('.dropdown-option').forEach(opt => {
+                opt.addEventListener('click', () => toggleStore(opt));
+            });
+        }
+
+        function toggleStore(opt) {
+            const id = opt.dataset.id, title = opt.dataset.title;
+            const idx = state.selectedStores.findIndex(s => s.id === id);
+            if (idx >= 0) { state.selectedStores.splice(idx, 1); opt.classList.remove('selected'); }
+            else { state.selectedStores.push({ id, title }); opt.classList.add('selected'); }
+            updateSelectedDisplay();
+            updateSummary();
+            validateForm();
+        }
+
+        function updateSelectedDisplay() {
+            if (state.selectedStores.length === 0) {
+                el.storeSelectTrigger.innerHTML = '<span class="multi-select-placeholder">Select channel projects…</span>';
+            } else {
+                el.storeSelectTrigger.innerHTML = state.selectedStores.map(s => `
+                    <span class="selected-tag" data-id="${s.id}">${escapeHtml(s.title)}<span class="remove-tag" onclick="event.stopPropagation(); removeStore('${s.id}')">&times;</span></span>
+                `).join('');
+            }
+        }
+
+        function removeStore(id) {
+            state.selectedStores = state.selectedStores.filter(s => s.id !== id);
+            updateSelectedDisplay();
+            renderStoreOptions(el.storeSearchInput.value);
+            updateSummary();
+            validateForm();
+        }
+        window.removeStore = removeStore;
+
+        // ========== FILE HANDLING ==========
+        function handleFile(file) {
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['xlsx', 'xls', 'csv'].includes(ext)) { showStatus('error', 'Invalid File', 'Please upload an Excel or CSV file.'); return; }
+            el.fileUploadZone.classList.add('has-file');
+            el.fileInfoContainer.style.display = 'block';
+            el.fileInfoContainer.innerHTML = `
+                <div class="file-info">
+                    <div class="file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg></div>
+                    <div class="file-details"><div class="file-name">${escapeHtml(file.name)}</div><div class="file-meta">${formatSize(file.size)}</div></div>
+                    <button class="remove-file" onclick="clearFile()"><svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg></button>
+                </div>`;
+            parseFile(file);
+        }
+
+        function parseFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    if (json.length < 2) { showStatus('error', 'Empty File', 'File must have a header row and at least one data row.'); return; }
+                    state.parsedTasks = json.slice(1).filter(r => r[0]).map(r => ({
+                        title: String(r[0] || '').trim(),
+                        description: String(r[1] || '').trim(),
+                        dueDate: parseDueDate(r[2])
+                    }));
+                    renderPreview();
+                    updateSummary();
+                    validateForm();
+                    showStatus('success', 'File Parsed', `Found ${state.parsedTasks.length} tasks ready to create.`);
+                } catch (err) { console.error(err); showStatus('error', 'Parse Error', 'Could not read the file. Please check the format.'); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseDueDate(val) {
+            if (!val) return null;
+            if (val instanceof Date) return val.toISOString();
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? null : d.toISOString();
+        }
+
+        function renderPreview() {
+            el.previewSection.style.display = 'block';
+            el.previewCount.textContent = `${state.parsedTasks.length} task${state.parsedTasks.length !== 1 ? 's' : ''}`;
+            el.previewTableBody.innerHTML = state.parsedTasks.map(t => `
+                <tr>
+                    <td class="task-title">${escapeHtml(t.title)}</td>
+                    <td class="task-desc">${escapeHtml(t.description) || '—'}</td>
+                    <td class="task-due">${t.dueDate ? formatDate(t.dueDate) : '—'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function clearFile() {
+            el.fileInput.value = '';
+            if (el.fileUploadZone) el.fileUploadZone.classList.remove('has-file');
+            if (el.fileInfoContainer) el.fileInfoContainer.style.display = 'none';
+            if (activeTab === 'upload') {
+                el.previewSection.style.display = 'none';
+                state.parsedTasks = [];
+                updateSummary();
+                validateForm();
+            }
+        }
+        window.clearFile = clearFile;
+
+        // ========== SUMMARY ==========
+        function updateSummary() {
+            const hasStores = state.selectedStores.length > 0;
+            const hasTasks = state.parsedTasks.length > 0;
+            const hasName = el.taskListName.value.trim().length > 0;
+            if (hasStores && hasTasks && hasName) {
+                el.summaryCard.style.display = 'block';
+                const total = state.selectedStores.length * state.parsedTasks.length;
+                el.summaryContent.innerHTML = `
+                    <div class="summary-row"><span>Task List Name</span><span>"${escapeHtml(el.taskListName.value.trim())}"</span></div>
+                    <div class="summary-row"><span>Target Channels</span><span>${state.selectedStores.length} project${state.selectedStores.length !== 1 ? 's' : ''}</span></div>
+                    <div class="summary-row"><span>Tasks per Channel</span><span>${state.parsedTasks.length} task${state.parsedTasks.length !== 1 ? 's' : ''}</span></div>
+                    <div class="summary-row summary-total"><span>Total Tasks to Create</span><span>${total}</span></div>`;
+            } else {
+                el.summaryCard.style.display = 'none';
+            }
+        }
+
+        // ========== SUBMISSION ==========
+        async function submitTasks() {
+            if (state.isSubmitting || !validateForm()) return;
+            const listName = el.taskListName.value.trim();
+            const color = CONFIG.taskColors[Math.floor(Math.random() * CONFIG.taskColors.length)];
+            state.isSubmitting = true;
+            el.submitBtn.disabled = true;
+            el.submitBtn.innerHTML = '<div class="btn-spinner"></div> Creating Tasks…';
+            el.progressContainer.style.display = 'block';
+            el.progressDetails.innerHTML = '';
+            el.statusContainer.innerHTML = '';
+
+            const totalStores = state.selectedStores.length;
+            const totalTasks = state.parsedTasks.length;
+            const totalOps = totalStores * (1 + totalTasks);
+            let completedOps = 0, successStores = 0, failedStores = 0;
+
+            for (let i = 0; i < state.selectedStores.length; i++) {
+                const store = state.selectedStores[i];
+                addProgressItem(`Processing ${store.title}…`, 'pending');
+                try {
+                    updateProgress(Math.round((completedOps / totalOps) * 100), `Creating list in ${store.title}…`);
+                    const taskList = await createTaskList(store.id, listName, color);
+                    const listId = taskList.id || taskList.data?.id;
+                    completedOps++;
+                    if (!listId) throw new Error('No list ID returned');
+
+                    let created = 0;
+                    for (let j = 0; j < state.parsedTasks.length; j++) {
+                        const task = state.parsedTasks[j];
+                        updateProgress(Math.round((completedOps / totalOps) * 100), `Task ${j + 1}/${totalTasks} in ${store.title}…`);
+                        try {
+                            const taskData = { title: task.title, description: task.description || '', status: 'OPEN', priority: 'Priority_3', taskListId: listId };
+                            if (task.dueDate) taskData.dueDate = task.dueDate;
+                            await createTask(store.id, taskData);
+                            created++;
+                        } catch (e) { console.error(e); }
+                        completedOps++;
+                        await new Promise(r => setTimeout(r, 50));
+                    }
+                    updateProgressItem(i, `✓ ${store.title}: ${created} tasks created`, 'success');
+                    successStores++;
+                } catch (e) {
+                    console.error(e);
+                    updateProgressItem(i, `✗ ${store.title}: ${e.message}`, 'error');
+                    failedStores++;
+                    completedOps += (1 + totalTasks);
+                }
+            }
+
+            updateProgress(100, 'Complete!');
+            if (failedStores === 0) showStatus('success', 'All Tasks Created!', `"${listName}" with ${totalTasks} tasks was created in ${successStores} channel${successStores !== 1 ? 's' : ''}.`);
+            else if (successStores > 0) showStatus('info', 'Partially Complete', `${successStores} of ${totalStores} channels succeeded.`);
+            else showStatus('error', 'All Failed', 'Check your API token and channel permissions.');
+
+            state.isSubmitting = false;
+            el.submitBtn.disabled = false;
+            el.submitBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> Create Tasks';
+            validateForm();
+        }
+
+        function addProgressItem(text, status) {
+            const item = document.createElement('div');
+            item.className = `progress-item ${status}`;
+            item.textContent = text;
+            el.progressDetails.appendChild(item);
+        }
+
+        function updateProgressItem(idx, text, status) {
+            const items = el.progressDetails.querySelectorAll('.progress-item');
+            if (items[idx]) { items[idx].textContent = text; items[idx].className = `progress-item ${status}`; }
+        }
+
+        // ========== UTILITIES ==========
+        function validateForm() {
+            const valid = state.selectedStores.length > 0 && state.parsedTasks.length > 0 && el.taskListName.value.trim().length > 0;
+            el.submitBtn.disabled = !valid || state.isSubmitting;
+            return valid;
+        }
+
+        function updateProgress(pct, label) {
+            el.progressFill.style.width = `${pct}%`;
+            el.progressPercent.textContent = `${pct}%`;
+            el.progressLabel.textContent = label;
+        }
+
+        function showStatus(type, title, msg) {
+            const icons = {
+                success: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+                error: '<svg viewBox="0 0 24 24"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>',
+                info: '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>'
+            };
+            el.statusContainer.innerHTML = `<div class="status-message ${type}">${icons[type]}<div class="message-content"><div class="message-title">${title}</div><div class="message-details">${msg}</div></div></div>`;
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function formatDate(iso) {
+            return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ========== EVENT LISTENERS ==========
+        el.storeSelectTrigger.addEventListener('click', () => {
+            el.storeDropdown.classList.toggle('show');
+            el.storeSelectTrigger.classList.toggle('active');
+            if (el.storeDropdown.classList.contains('show')) el.storeSearchInput.focus();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.multi-select-container')) {
+                el.storeDropdown.classList.remove('show');
+                el.storeSelectTrigger.classList.remove('active');
+            }
+        });
+
+        el.storeSearchInput.addEventListener('input', (e) => renderStoreOptions(e.target.value));
+        el.taskListName.addEventListener('input', () => { updateSummary(); validateForm(); });
+        el.fileUploadZone.addEventListener('click', () => el.fileInput.click());
+        el.fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        el.fileUploadZone.addEventListener('dragover', (e) => { e.preventDefault(); el.fileUploadZone.classList.add('drag-over'); });
+        el.fileUploadZone.addEventListener('dragleave', () => el.fileUploadZone.classList.remove('drag-over'));
+        el.fileUploadZone.addEventListener('drop', (e) => { e.preventDefault(); el.fileUploadZone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+        el.submitBtn.addEventListener('click', submitTasks);
+
+        // ========== INIT ==========
+        document.addEventListener('DOMContentLoaded', fetchStoreProjects);
+    </script>
+</body>
+</html>
